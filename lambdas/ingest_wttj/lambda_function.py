@@ -14,9 +14,9 @@ BUCKET_RAW = "job-market-raw-784336"
 
 # Algolia API — clés publiques extraites du JS du site WTTJ
 # Pas besoin d'auth OAuth2, ces clés sont publiques et stables
-ALGOLIA_APP_ID = "CSLP10AATJ"
-ALGOLIA_API_KEY = "7c4c390fb69986cf2f0f76fc1a8cfb6f"
-ALGOLIA_URL = f"https://{ALGOLIA_APP_ID}-dsn.algolia.net/1/indexes/wttj_production_jobs_fr/query"
+ALGOLIA_APP_ID = "CSEKHVMS53"
+ALGOLIA_API_KEY = "4bd8f6215d0cc52b26430765769e65a0"
+ALGOLIA_URL = f"https://{ALGOLIA_APP_ID}-dsn.algolia.net/1/indexes/wttj_jobs_production_fr/query"
 
 # Métiers à collecter — mêmes que France Travail pour pouvoir comparer
 METIERS = [
@@ -59,7 +59,7 @@ def fetch_offres_wttj(metier):
             "hitsPerPage": PAGE_SIZE,
             "page": page,
             # Filtre sur la France uniquement
-            "facetFilters": [["country_code:FR"]],
+            "filters": 'offices.country_code:"FR"',
             # Attributs qu'on veut récupérer — on limite pour alléger la réponse
             "attributesToRetrieve": [
                 "id",
