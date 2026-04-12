@@ -206,3 +206,6 @@ marimo/_static/
 marimo/_lsp/
 __marimo__/
 .env
+lambdas/ingest_france_travail/package/
+lambdas/ingest_france_travail/deployment.zip
+lambdas/ingest_france_travail/response.json
