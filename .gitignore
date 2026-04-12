@@ -209,3 +209,6 @@ __marimo__/
 lambdas/ingest_france_travail/package/
 lambdas/ingest_france_travail/deployment.zip
 lambdas/ingest_france_travail/response.json
+lambdas/ingest_wttj/package/
+lambdas/ingest_wttj/deployment.zip
+lambdas/ingest_wttj/response.json
