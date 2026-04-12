@@ -12,8 +12,7 @@ logger.setLevel(logging.INFO)
 AWS_REGION = "eu-west-3"
 BUCKET_RAW = "job-market-raw-784336"
 
-# Algolia API — clés publiques extraites du JS du site WTTJ
-# Pas besoin d'auth OAuth2, ces clés sont publiques et stables
+# Algolia API — nouvelles clés récupérées depuis le JS du site WTTJ
 ALGOLIA_APP_ID = "CSEKHVMS53"
 ALGOLIA_API_KEY = "4bd8f6215d0cc52b26430765769e65a0"
 ALGOLIA_URL = f"https://{ALGOLIA_APP_ID}-dsn.algolia.net/1/indexes/wttj_jobs_production_fr/query"
@@ -39,10 +38,12 @@ METIERS = [
 # Nb d'offres par page Algolia — max autorisé
 PAGE_SIZE = 100
 
+# Limite de pages par métier — évite le timeout Lambda
+# MAX_PAGES = 3
+
 
 # func Récupérer toutes les offres pour un métier donné
-# Algolia pagine avec "page" (0-indexed) et "hitsPerPage"
-# On s'arrête quand on a parcouru toutes les pages (page >= nbPages)
+# On s'arrête quand on a parcouru toutes les pages ou atteint MAX_PAGES
 def fetch_offres_wttj(metier):
     offres = []
     page = 0
@@ -60,25 +61,23 @@ def fetch_offres_wttj(metier):
             "query": metier,
             "hitsPerPage": PAGE_SIZE,
             "page": page,
-            # Filtre sur la France uniquement
             "filters": 'offices.country_code:"FR"',
-            # Attributs qu'on veut récupérer — on limite pour alléger la réponse
             "attributesToRetrieve": [
                 "id",
                 "name",
                 "slug",
                 "contract_type",
                 "remote",
-                "salary_min",
-                "salary_max",
+                "salary_minimum",
+                "salary_maximum",
                 "salary_currency",
                 "salary_period",
                 "experience_level_minimum",
                 "published_at",
-                "office",
+                "offices",
                 "organization",
-                "tags_labels",
-                "profile",
+                "sectors",
+                "key_missions",
             ],
         }
 
@@ -95,7 +94,7 @@ def fetch_offres_wttj(metier):
             f"Métier: {metier} | Page {page + 1}/{nb_pages} | {len(hits)} offres"
         )
 
-        # Dernière page atteinte -> stop
+        # Stop si dernière page OU si on a atteint la limite MAX_PAGES
         if page >= nb_pages - 1:
             break
 
@@ -126,7 +125,7 @@ def save_to_s3(offres, date_partition):
 # HANDLER PRINCIPAL
 # Flow :
 # 1. Boucle sur 14 métiers
-# 2. Collecte toutes les offres avec pagination Algolia
+# 2. Collecte max 3 pages d'offres par métier (300 offres)
 # 3. Déduplique par id WTTJ
 # 4. Sauvegarde JSON dans S3
 def lambda_handler(event, context):
@@ -144,7 +143,6 @@ def lambda_handler(event, context):
             toutes_offres.extend(offres)
             logger.info(f"✅ {metier} → {len(offres)} offres")
         except Exception as e:
-            # On log et on continue — un métier en erreur ne bloque pas les autres
             logger.error(f"❌ Erreur {metier} : {str(e)}")
             continue
 
@@ -154,7 +152,7 @@ def lambda_handler(event, context):
     seen = set()
     offres_dedup = []
     for offre in toutes_offres:
-        job_id = offre.get("id")
+        job_id = offre.get("objectID")
         if job_id and job_id not in seen:
             seen.add(job_id)
             offres_dedup.append(offre)
