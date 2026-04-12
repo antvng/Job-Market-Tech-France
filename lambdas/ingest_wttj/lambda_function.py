@@ -51,6 +51,8 @@ def fetch_offres_wttj(metier):
         "X-Algolia-Application-Id": ALGOLIA_APP_ID,
         "X-Algolia-API-Key": ALGOLIA_API_KEY,
         "Content-Type": "application/json",
+        "Referer": "https://www.welcometothejungle.com/",
+        "Origin": "https://www.welcometothejungle.com",
     }
 
     while True:
