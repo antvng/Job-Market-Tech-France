@@ -212,3 +212,5 @@ lambdas/ingest_france_travail/response.json
 lambdas/ingest_wttj/package/
 lambdas/ingest_wttj/deployment.zip
 lambdas/ingest_wttj/response.json
+.DS_Store
+response.json
