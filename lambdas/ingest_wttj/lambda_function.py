@@ -78,6 +78,7 @@ def fetch_offres_wttj(metier):
                 "organization",
                 "sectors",
                 "key_missions",
+                "profile",
             ],
         }
 
