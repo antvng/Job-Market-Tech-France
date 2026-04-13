@@ -1,0 +1,56 @@
+{
+  "Comment": "Pipeline Job Market : Lambda FT + WTTJ en parallele puis Glue ETL puis Crawler",
+  "StartAt": "IngestParallel",
+  "States": {
+    "IngestParallel": {
+      "Type": "Parallel",
+      "Branches": [
+        {
+          "StartAt": "IngestFranceTravail",
+          "States": {
+            "IngestFranceTravail": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::lambda:invoke",
+              "Parameters": {
+                "FunctionName": "arn:aws:lambda:eu-west-3:386213784336:function:ingest-france-travail",
+                "Payload": {}
+              },
+              "End": true
+            }
+          }
+        },
+        {
+          "StartAt": "IngestWTTJ",
+          "States": {
+            "IngestWTTJ": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::lambda:invoke",
+              "Parameters": {
+                "FunctionName": "arn:aws:lambda:eu-west-3:386213784336:function:ingest-wttj",
+                "Payload": {}
+              },
+              "End": true
+            }
+          }
+        }
+      ],
+      "Next": "StartGlueJob"
+    },
+    "StartGlueJob": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::glue:startJobRun.sync",
+      "Parameters": {
+        "JobName": "transform-job-market"
+      },
+      "Next": "StartCrawler"
+    },
+    "StartCrawler": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::aws-sdk:glue:startCrawler",
+      "Parameters": {
+        "Name": "crawler-job-market"
+      },
+      "End": true
+    }
+  }
+}
