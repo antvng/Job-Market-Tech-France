@@ -1,0 +1,11 @@
+{
+  "name": "job-market-daily",
+  "schedule_expression": "cron(0 7 * * ? *)",
+  "state": "ENABLED",
+  "description": "Déclenchement quotidien pipeline Job Market à 7h UTC (9h Paris)",
+  "target": {
+    "Id": "target-stepfunctions",
+    "Arn": "arn:aws:states:eu-west-3:386213784336:stateMachine:job-market-pipeline",
+    "RoleArn": "arn:aws:iam::386213784336:role/stepfunctions-job-market-role"
+  }
+}

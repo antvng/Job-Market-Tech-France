@@ -1,0 +1,16 @@
+{
+  "name": "transform-job-market",
+  "role": "arn:aws:iam::386213784336:role/glue-job-market-role",
+  "command": {
+    "Name": "glueetl",
+    "ScriptLocation": "s3://job-market-raw-784336/scripts/transform_jobs.py",
+    "PythonVersion": "3"
+  },
+  "glue_version": "4.0",
+  "number_of_workers": 2,
+  "worker_type": "G.1X",
+  "default_arguments": {
+    "--job-language": "python",
+    "--enable-continuous-cloudwatch-log": "true"
+  }
+}
