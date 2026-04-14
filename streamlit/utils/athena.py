@@ -1,3 +1,11 @@
+import os
+import streamlit as st
+
+creds = st.secrets.get("aws", {})
+os.environ["AWS_ACCESS_KEY_ID"] = creds.get("AWS_ACCESS_KEY_ID", "")
+os.environ["AWS_SECRET_ACCESS_KEY"] = creds.get("AWS_SECRET_ACCESS_KEY", "")
+os.environ["AWS_DEFAULT_REGION"] = creds.get("AWS_DEFAULT_REGION", "eu-west-3")
+
 import awswrangler as wr
 import pandas as pd
 import streamlit as st
