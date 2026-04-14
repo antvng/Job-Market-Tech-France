@@ -74,7 +74,7 @@ Table paginée avec titre cliquable (lien direct WTTJ ou recherche Google pour F
 
 Salaire médian par métier, comparatif ESN vs startup vs grand groupe, scatter plot salaire par tranche d'expérience.
 
-[Voir le dashboard](https://job-market-tech-france.streamlit.app)
+[Voir le dashboard](https://job-market-tech-france-eef6bjs3ypyhqge6maxydu.streamlit.app)
 
 ---
 
