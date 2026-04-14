@@ -214,3 +214,4 @@ lambdas/ingest_wttj/deployment.zip
 lambdas/ingest_wttj/response.json
 .DS_Store
 response.json
+venv/
