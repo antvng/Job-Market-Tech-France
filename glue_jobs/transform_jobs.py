@@ -49,6 +49,10 @@ SKILLS_KEYWORDS = [
     # Méthodes
     "agile", "scrum", "kanban", "devops", "dataops",
     "api", "rest", "graphql", "microservices",
+    # QA & Sécurité — ajout pour les nouveaux métiers
+    "selenium", "cypress", "jest", "pytest", "junit",
+    "jira", "postman", "sonarqube",
+    "owasp", "siem", "soc", "pentest", "splunk", "vault",
 ]
 
 
@@ -238,7 +242,7 @@ print(f"WTTJ brut : {df_wttj_raw.count()} offres")
 
 
 # 2 Normalisation FT pour schéma commun
-# On mappe les champs FT vers nos 20 colonnes standardisées
+# On mappe les champs FT vers nos colonnes standardisées
 print("=== Normalisation France Travail ===")
 
 df_ft = df_ft_raw.select(
@@ -265,7 +269,7 @@ df_ft = df_ft_raw.select(
     # Expérience
     parse_exp_udf(F.col("experienceLibelle")).alias("experience_annees"),
 
-    # Salaire 
+    # Salaire
     parse_sal_min_udf(F.col("salaire.libelle")).alias("salaire_min"),
     parse_sal_max_udf(F.col("salaire.libelle")).alias("salaire_max"),
     parse_sal_periode_udf(F.col("salaire.libelle")).alias("salaire_periode"),
@@ -287,6 +291,10 @@ df_ft = df_ft_raw.select(
 
     # Dates
     F.to_date(F.col("dateCreation")).alias("date_publication"),
+
+    # URL — FT ne fournit pas d'URL directe
+    F.lit(None).cast(StringType()).alias("url_publique"),
+
     F.lit(DATE_PARTITION).alias("date_partition"),
 )
 
@@ -310,7 +318,7 @@ print(f"France Travail normalisé : {df_ft.count()} offres")
 # 3 Normalisation WTTJ pour schéma commun
 print("=== Normalisation WTTJ ===")
 
-# Concaténisation de  key_missions + profile pour maximiser la détection NLP
+# Concaténisation de key_missions + profile pour maximiser la détection NLP
 # key_missions = liste, on joint en string
 # profile = HTML, on nettoie d'abord
 df_wttj = df_wttj_raw.select(
@@ -322,7 +330,7 @@ df_wttj = df_wttj_raw.select(
     F.col("name").alias("titre"),
     F.col("organization.name").alias("entreprise"),
 
-    # Localisation 
+    # Localisation
     F.when(
         F.size(F.col("offices")) > 0,
         F.col("offices")[0]["city"]
@@ -342,7 +350,7 @@ df_wttj = df_wttj_raw.select(
         F.col("remote"), F.lit("wttj")
     ).alias("remote"),
 
-    # Expérience 
+    # Expérience
     F.col("experience_level_minimum").cast(IntegerType()).alias("experience_annees"),
 
     # Salaire on convertit en annuel si nécessaire
@@ -389,6 +397,10 @@ df_wttj = df_wttj_raw.select(
 
     # Dates
     F.to_date(F.col("published_at")).alias("date_publication"),
+
+    # URL construite dans la Lambda depuis org slug + job slug
+    F.col("url_publique"),
+
     F.lit(DATE_PARTITION).alias("date_partition"),
 )
 
@@ -432,7 +444,7 @@ print(f"Après déduplication : {df_dedup.count()} offres uniques")
 
 
 # 6 Parquet partitionné par date
-# S3curated sous PARQUET et parti Hive
+# S3 curated sous PARQUET et parti Hive
 # Crawler reconnaîtra automatiquement pour le Data Catalog
 print("Écriture Parquet dans S3 curated")
 
