@@ -12,7 +12,7 @@ logger.setLevel(logging.INFO)
 AWS_REGION = "eu-west-3"
 BUCKET_RAW = "job-market-raw-784336"
 
-# Algolia API — nouvelles clés récupérées depuis le JS du site WTTJ
+# Algolia API — clés récupérées depuis le JS du site WTTJ
 ALGOLIA_APP_ID = "CSEKHVMS53"
 ALGOLIA_API_KEY = "4bd8f6215d0cc52b26430765769e65a0"
 ALGOLIA_URL = f"https://{ALGOLIA_APP_ID}-dsn.algolia.net/1/indexes/wttj_jobs_production_fr/query"
@@ -33,17 +33,16 @@ METIERS = [
     "Cloud Engineer",
     "DevOps",
     "Consultant Data",
+    "QA Engineer",
+    "Security Engineer",
 ]
 
 # Nb d'offres par page Algolia — max autorisé
 PAGE_SIZE = 100
 
-# Limite de pages par métier — évite le timeout Lambda
-# MAX_PAGES = 3
-
 
 # func Récupérer toutes les offres pour un métier donné
-# On s'arrête quand on a parcouru toutes les pages ou atteint MAX_PAGES
+# On s'arrête quand on a parcouru toutes les pages disponibles
 def fetch_offres_wttj(metier):
     offres = []
     page = 0
@@ -89,13 +88,23 @@ def fetch_offres_wttj(metier):
         hits = data.get("hits", [])
         nb_pages = data.get("nbPages", 0)
 
+        # Construit l'URL publique depuis org slug + job slug
+        # format : welcometothejungle.com/fr/companies/{org}/jobs/{job}
+        for hit in hits:
+            org_slug = hit.get("organization", {}).get("slug", "")
+            job_slug = hit.get("slug", "")
+            if org_slug and job_slug:
+                hit["url_publique"] = f"https://www.welcometothejungle.com/fr/companies/{org_slug}/jobs/{job_slug}"
+            else:
+                hit["url_publique"] = None
+
         offres.extend(hits)
 
         logger.info(
             f"Métier: {metier} | Page {page + 1}/{nb_pages} | {len(hits)} offres"
         )
 
-        # Stop si dernière page OU si on a atteint la limite MAX_PAGES
+        # Stop si dernière page
         if page >= nb_pages - 1:
             break
 
@@ -119,16 +128,17 @@ def save_to_s3(offres, date_partition):
         ContentType="application/json",
     )
 
-    logger.info(f"✅ {len(offres)} offres sauvegardées → s3://{BUCKET_RAW}/{s3_key}")
+    logger.info(f"{len(offres)} offres sauvegardées → s3://{BUCKET_RAW}/{s3_key}")
     return s3_key
 
 
 # HANDLER PRINCIPAL
 # Flow :
-# 1. Boucle sur 14 métiers
-# 2. Collecte max 3 pages d'offres par métier (300 offres)
-# 3. Déduplique par id WTTJ
-# 4. Sauvegarde JSON dans S3
+# 1. Boucle sur 16 métiers
+# 2. Collecte toutes les pages d'offres par métier
+# 3. Construit l'URL publique depuis org slug + job slug
+# 4. Déduplique par objectID WTTJ
+# 5. Sauvegarde JSON dans S3
 def lambda_handler(event, context):
     logger.info("=== Démarrage de l'ingestion WTTJ ===")
 
@@ -137,19 +147,19 @@ def lambda_handler(event, context):
 
     toutes_offres = []
 
-    # 1, 2 Collecte par métier
+    # 1, 2, 3 Collecte par métier + construction URLs
     for metier in METIERS:
         try:
             offres = fetch_offres_wttj(metier)
             toutes_offres.extend(offres)
-            logger.info(f"✅ {metier} → {len(offres)} offres")
+            logger.info(f"{metier} → {len(offres)} offres")
         except Exception as e:
-            logger.error(f"❌ Erreur {metier} : {str(e)}")
+            logger.error(f"Erreur {metier} : {str(e)}")
             continue
 
     logger.info(f"Total brut collecté : {len(toutes_offres)} offres")
 
-    # 3 Déduplication par id WTTJ
+    # 4 Déduplication par objectID WTTJ
     seen = set()
     offres_dedup = []
     for offre in toutes_offres:
@@ -160,7 +170,7 @@ def lambda_handler(event, context):
 
     logger.info(f"Après déduplication : {len(offres_dedup)} offres uniques")
 
-    # 4 Sauvegarde S3
+    # 5 Sauvegarde S3
     s3_key = save_to_s3(offres_dedup, date_partition)
 
     logger.info("=== Ingestion WTTJ terminée avec succès ===")
